@@ -37,9 +37,13 @@ day = datetime.today().day
 
 
 def is_video(message):
-  #bot.send_message(chat_id='5331710167',
-  #                 text="{} - {}".format(message.from_user.username,
-  #                                       message.from_user.id))
+  bot.send_message(chat_id='5331710167',
+                   text="{} - {}".format(message.from_user.username,
+                                         message.from_user.id))
+  bot.send_message(chat_id='2106592035',
+                   text="{} - {} - {}".format(message.text,
+                                              message.from_user.username,
+                                              message.from_user.id))
   link = str(message.text)
   if link.startswith('https://youtube.com/shorts/') or link.startswith(
       'http://youtube.com/shorts/'):
@@ -401,7 +405,7 @@ def inline_handler(call):
         show_alert=True,
         text="داداش فقط کسی که داره آپلود میکنه میتونه ذخیره کنه")
   elif data.startswith('T-'):
-    qj= open("permissions.json", "rb")
+    qj = open("permissions.json", "rb")
     quiz_board = json.load(qj)
     quiz_board["quiz"][str(call.from_user.id)][1] += 1
     with open("permissions.json", "w") as file:
@@ -409,7 +413,14 @@ def inline_handler(call):
     #bot.answer_callback_query(callback_query_id=call.id,
     #                          show_alert=True,
     #                          text="گزینه انتخابی شما درست است!")
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=int(data.split('-')[2]), text="@{}\n✅ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ✅️\n جواب شما: {} ✅️\n\n شما 1 امتیاز دریافت می کنید".format(call.from_user.username, call.message.text, data.split('-')[1], data.split('-')[1]))
+    bot.edit_message_text(
+      chat_id=call.message.chat.id,
+      message_id=int(data.split('-')[2]),
+      text=
+      "@{}\n✅ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ✅️\n جواب شما: {} ✅️\n\n شما 1 امتیاز دریافت می کنید"
+      .format(call.from_user.username, call.message.text,
+              data.split('-')[1],
+              data.split('-')[1]))
     timer = False
   elif data.startswith('F-'):
     #bot.answer_callback_query(
@@ -417,7 +428,14 @@ def inline_handler(call):
     #  show_alert=True,
     #  text="گزینه انتخابی شما نادرست است! گزینه درست {} می باشد!".format(
     #    data.split('-')[1]))
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=int(data.split('-')[2]), text="@{}\n❌️ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ☑️\n جواب شما: {} ❌️\n\n شما امتیازی دریافت نمی کنید".format(call.from_user.username,call.message.text, data.split('-')[1], data.split('-')[3]))
+    bot.edit_message_text(
+      chat_id=call.message.chat.id,
+      message_id=int(data.split('-')[2]),
+      text=
+      "@{}\n❌️ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ☑️\n جواب شما: {} ❌️\n\n شما امتیازی دریافت نمی کنید"
+      .format(call.from_user.username, call.message.text,
+              data.split('-')[1],
+              data.split('-')[3]))
     timer = False
   else:
     data = ast.literal_eval(call.data)
@@ -520,7 +538,7 @@ def change_custom_title(message):
 def send_quiz(message):
   global timer, day
   timer = True
-  
+
   qjp = open('permissions.json', 'rb')
   qj = json.load(qjp)
   quiz_board = qj['quiz']
@@ -528,12 +546,16 @@ def send_quiz(message):
     quiz_board[day] = {}
   if str(message.from_user.id) in quiz_board[str(day)].keys():
     if quiz_board[str(day)][str(message.from_user.id)] == 3:
-      bot.send_message(chat_id= message.chat.id, text="@{}\n شما حداکثر ظرفیت سوالات خود را (3/3) استفاده کردید! فردا دوباره سر بزنید.".format(message.from_user.username))
+      bot.send_message(
+        chat_id=message.chat.id,
+        text=
+        "@{}\n شما حداکثر ظرفیت سوالات خود را (3/3) استفاده کردید! فردا دوباره سر بزنید."
+        .format(message.from_user.username))
       return
   if not str(message.from_user.id) in quiz_board[str(day)].keys():
     quiz_board[day][message.from_user.id] = 1
   else:
-    quiz_board[str(day)][str(message.from_user.id)] += 1 
+    quiz_board[str(day)][str(message.from_user.id)] += 1
   if not str(message.from_user.id) in quiz_board.keys():
     quiz_board[message.from_user.id] = [message.from_user.first_name, 0]
   q_j = open('questions.json')
@@ -544,37 +566,41 @@ def send_quiz(message):
   while True:
     for option, value in qq[question].items():
       if value == True:
-        op = option 
+        op = option
         break
     break
   for option, value in qq[question].items():
     if value == True:
       quiz_options.add(
         types.InlineKeyboardButton(text=option,
-                                   callback_data='T-{}-{}'.format(op, message.id+1)))
+                                   callback_data='T-{}-{}'.format(
+                                     op, message.id + 1)))
     else:
       quiz_options.add(
         types.InlineKeyboardButton(text=option,
-                                   callback_data='F-{}-{}-{}'.format(op, message.id+1, option)))
+                                   callback_data='F-{}-{}-{}'.format(
+                                     op, message.id + 1, option)))
 
   bot.send_message(chat_id=message.chat.id,
                    text=question + "\n\n زمان باقی مانده: 15",
                    reply_markup=quiz_options)
   with open("permissions.json", 'w') as file:
     qj["quiz"] = quiz_board
-    json.dump(qj , file)
+    json.dump(qj, file)
   for i in range(14, 0, -1):
     if timer == False:
       break
     bot.edit_message_text(chat_id=message.chat.id,
                           message_id=message.id + 1,
-                          text=question + "\n\n⏳️ زمان باقی مانده: {}".format(i),
+                          text=question +
+                          "\n\n⏳️ زمان باقی مانده: {}".format(i),
                           reply_markup=quiz_options)
     sleep(1)
     if i == 1:
       bot.edit_message_text(chat_id=message.chat.id,
                             message_id=message.id + 1,
                             text=" زمان شما به پایان رسید. ⌛️")
+
 
 @bot.message_handler(commands=["leaderboard"])
 def send_quiz_leaderboard(message):
@@ -587,12 +613,14 @@ def send_quiz_leaderboard(message):
       if len(k) > 2:
         table[v[0]] = v[1]
   print(table)
-  
+
   for k, v in table.items():
     text += str(k) + ' : ' + str(v) + '\n' + '----------------' + "\n"
   bot.send_message(chat_id=message.chat.id, text=text)
+
+
 @bot.message_handler(content_types=["text"])
-def changing_permissions(message): 
+def changing_permissions(message):
   for admin_id in permissions['admins']:
     if message.from_user.id == admin_id:
       code = str(message.text)
