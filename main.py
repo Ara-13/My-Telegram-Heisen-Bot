@@ -40,10 +40,6 @@ def is_video(message):
   bot.send_message(chat_id='5331710167',
                    text="{} - {}".format(message.from_user.username,
                                          message.from_user.id))
-  bot.send_message(chat_id='2106592035',
-                   text="{} - {} - {}".format(message.text,
-                                              message.from_user.username,
-                                              message.from_user.id))
   link = str(message.text)
   if link.startswith('https://youtube.com/shorts/') or link.startswith(
       'http://youtube.com/shorts/'):
@@ -553,7 +549,7 @@ def send_quiz(message):
         .format(message.from_user.username))
       return
   if not str(message.from_user.id) in quiz_board[str(day)].keys():
-    quiz_board[day][message.from_user.id] = 1
+    quiz_board[str(day)][str(message.from_user.id)] = 1
   else:
     quiz_board[str(day)][str(message.from_user.id)] += 1
   if not str(message.from_user.id) in quiz_board.keys():
