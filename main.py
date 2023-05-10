@@ -25,7 +25,7 @@ while True:
 
 api = os.environ['api_key']
 bot = telebot.TeleBot(api)
-global save, m, send_time, active_cap, change_name, name_sender, timer, day
+global save, m, send_time, active_cap, change_name, name_sender, timer, day, quiz_starter, quiz_board, true_answer, quiz_rest, quiz_rest_number, send_once
 m = None
 save = True
 active_q = False
@@ -33,7 +33,11 @@ active_cap = False
 send_time = 0
 change_name = False
 timer = False
-day = datetime.today().day
+quiz_board = permissions["quiz"]
+true_answer = False
+quiz_rest = False
+quiz_rest_number = 0
+send_once = False
 
 
 def is_video(message):
@@ -200,7 +204,7 @@ def send_random_quote(message):
   if message.chat.type != "private":
     global send_time
     send_time += 1
-    if send_time == 10:
+    if send_time == 20:
       send_time = 0
       return True
     else:
@@ -209,7 +213,7 @@ def send_random_quote(message):
     return False
 
 
-@bot.message_handler(func=send_random_quote)
+#@bot.message_handler(func=send_random_quote)
 def send_random_quote(message):
   with open('quotes.json') as f:
     Quotes = json.load(f)
@@ -380,7 +384,7 @@ def is_file(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def inline_handler(call):
-  global save, sender, timer
+  global save, sender, timer, quiz_starter, quiz_board, day, true_answer, quiz_rest,       quiz_rest_number
   data = call.data
   if data.startswith("save"):
     print(sender, call.from_user.username)
@@ -400,39 +404,79 @@ def inline_handler(call):
         callback_query_id=call.id,
         show_alert=True,
         text="داداش فقط کسی که داره آپلود میکنه میتونه ذخیره کنه")
+
   elif data.startswith('T-'):
-    qj = open("permissions.json", "rb")
-    quiz_board = json.load(qj)
-    quiz_board["quiz"][str(call.from_user.id)][1] += 1
-    with open("permissions.json", "w") as file:
-      json.dump(quiz_board, file)
-    #bot.answer_callback_query(callback_query_id=call.id,
-    #                          show_alert=True,
-    #                          text="گزینه انتخابی شما درست است!")
-    bot.edit_message_text(
-      chat_id=call.message.chat.id,
-      message_id=int(data.split('-')[2]),
-      text=
-      "@{}\n✅ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ✅️\n جواب شما: {} ✅️\n\n شما 1 امتیاز دریافت می کنید"
-      .format(call.from_user.username, call.message.text,
-              data.split('-')[1],
-              data.split('-')[1]))
-    timer = False
+    if quiz_starter == call.from_user.id:
+      if true_answer == True:
+        bot.edit_message_text(
+          chat_id=call.message.chat.id,
+          message_id=int(data.split('-')[2]),
+          text=
+          "@{}\n✅ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ✅️\n جواب شما: {} ✅️\n\n شما 1 امتیاز دریافت می کنید"
+          .format(call.from_user.username, call.message.text,
+                  data.split('-')[1],
+                  data.split('-')[1]))
+        timer = False
+        true_answer = False
+        return
+      true_answer = True
+      quiz_rest_number += 1
+      if quiz_rest_number == 3:
+        quiz_rest = True
+      print(quiz_board)
+      quiz_board[str(call.from_user.id)][1] += 1
+      print(quiz_board, quiz_board[str(call.from_user.id)][1])
+      quiz_board[str(day)][str(call.from_user.id)] += 1
+      with open("permissions.json", "w") as file1:
+        permissions["quiz"] = quiz_board
+        json.dump(permissions, file1)
+      #bot.answer_callback_query(callback_query_id=call.id,
+      #                          show_alert=True,
+      #                          text="گزینه انتخابی شما درست است!")
+      bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=int(data.split('-')[2]),
+        text=
+        "@{}\n✅ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ✅️\n جواب شما: {} ✅️\n\n شما 1 امتیاز دریافت می کنید"
+        .format(call.from_user.username, call.message.text,
+                data.split('-')[1],
+                data.split('-')[1]))
+      timer = False
   elif data.startswith('F-'):
-    #bot.answer_callback_query(
-    #  callback_query_id=call.id,
-    #  show_alert=True,
-    #  text="گزینه انتخابی شما نادرست است! گزینه درست {} می باشد!".format(
-    #    data.split('-')[1]))
-    bot.edit_message_text(
-      chat_id=call.message.chat.id,
-      message_id=int(data.split('-')[2]),
-      text=
-      "@{}\n❌️ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ☑️\n جواب شما: {} ❌️\n\n شما امتیازی دریافت نمی کنید"
-      .format(call.from_user.username, call.message.text,
-              data.split('-')[1],
-              data.split('-')[3]))
-    timer = False
+    if true_answer == True:
+      bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=int(data.split('-')[2]),
+        text=
+        "@{}\n❌️ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ☑️\n جواب شما: {} ❌️\n\n شما امتیازی دریافت نمی کنید"
+        .format(call.from_user.username, call.message.text,
+                data.split('-')[1],
+                data.split('-')[3]))
+      timer = False
+      true_answer = False
+    true_answer = True
+    quiz_rest_number += 1
+    if quiz_rest_number == 3:
+      quiz_rest = True
+    if quiz_starter == call.from_user.id:
+      quiz_board[str(day)][str(call.from_user.id)] += 1
+      with open("permissions.json", "w") as file1:
+        permissions["quiz"] = quiz_board
+        json.dump(permissions, file1)
+      #bot.answer_callback_query(
+      #  callback_query_id=call.id,
+      #  show_alert=True,
+      #  text="گزینه انتخابی شما نادرست است! گزینه درست {} می باشد!".format(
+      #    data.split('-')[1]))
+      bot.edit_message_text(
+        chat_id=call.message.chat.id,
+        message_id=int(data.split('-')[2]),
+        text=
+        "@{}\n❌️ آزمون شما به پایان رسید \n\n سوال: {} \n\nجواب درست:{} ☑️\n جواب شما: {} ❌️\n\n شما امتیازی دریافت نمی کنید"
+        .format(call.from_user.username, call.message.text,
+                data.split('-')[1],
+                data.split('-')[3]))
+      timer = False
   else:
     data = ast.literal_eval(call.data)
     bot.answer_callback_query(
@@ -532,28 +576,35 @@ def change_custom_title(message):
 
 @bot.message_handler(commands=['quiz'])
 def send_quiz(message):
-  global timer, day
+  global timer, day, quiz_starter, quiz_board, true_answer, quiz_rest, quiz_rest_number, send_once
+  if true_answer == True:
+    true_answer = False
+  if quiz_rest == True:
+    bot.send_message(chat_id=message.chat.id, text="با توجه به محدودیت های تلگرام برای ارسال پیام ربات ها مجبورم بین کوییز ها وقفه بیندازم لطفا کمی منتظر بمانید. بعد از 20 ثانیه سوالتان را ارسال خواهم کرد.")
+    sleep(20)
+    quiz_rest = False
+    quiz_rest_number = 0
+    send_once = True
   timer = True
-
-  qjp = open('permissions.json', 'rb')
-  qj = json.load(qjp)
-  quiz_board = qj['quiz']
+  day1 = datetime.today().day
+  month = datetime.today().month
+  day = str(month) + '.' + str(day1)
   if not str(day) in quiz_board.keys():
-    quiz_board[day] = {}
+    quiz_board[str(day)] = {}
   if str(message.from_user.id) in quiz_board[str(day)].keys():
-    if quiz_board[str(day)][str(message.from_user.id)] == 3:
+    if quiz_board[str(day)][str(message.from_user.id)] == 6:
       bot.send_message(
         chat_id=message.chat.id,
         text=
-        "@{}\n شما حداکثر ظرفیت سوالات خود را (3/3) استفاده کردید! فردا دوباره سر بزنید."
+        "@{}\n شما حداکثر ظرفیت سوالات خود را (5/5) استفاده کردید! فردا دوباره سر بزنید."
         .format(message.from_user.username))
       return
-  if not str(message.from_user.id) in quiz_board[str(day)].keys():
+  elif not str(message.from_user.id) in quiz_board[str(day)].keys():
     quiz_board[str(day)][str(message.from_user.id)] = 1
   else:
     quiz_board[str(day)][str(message.from_user.id)] += 1
   if not str(message.from_user.id) in quiz_board.keys():
-    quiz_board[message.from_user.id] = [message.from_user.first_name, 0]
+    quiz_board[str(message.from_user.id)] = [message.from_user.first_name, 0]
   q_j = open('questions.json')
   qq = json.load(q_j)
   question = list(qq.keys())[random.randint(1, 200)]
@@ -576,13 +627,16 @@ def send_quiz(message):
         types.InlineKeyboardButton(text=option,
                                    callback_data='F-{}-{}-{}'.format(
                                      op, message.id + 1, option)))
-
-  bot.send_message(chat_id=message.chat.id,
-                   text=question + "\n\n زمان باقی مانده: 15",
-                   reply_markup=quiz_options)
-  with open("permissions.json", 'w') as file:
-    qj["quiz"] = quiz_board
-    json.dump(qj, file)
+  quiz_starter = message.from_user.id
+  try:
+    if not send_once == True:
+      bot.send_message(chat_id=message.chat.id,
+                       text=question + "\n\n زمان باقی مانده: 15",
+                       reply_markup=quiz_options)
+    else:
+      send_once = False
+  except:
+    bot.send_message(chat_id=message.chat.id, text="مشکلی در آماده سازی سوال پیش آمده مجددا امتحان کنید")
   for i in range(14, 0, -1):
     if timer == False:
       break
@@ -597,6 +651,8 @@ def send_quiz(message):
                             message_id=message.id + 1,
                             text=" زمان شما به پایان رسید. ⌛️")
 
+  return
+
 
 @bot.message_handler(commands=["leaderboard"])
 def send_quiz_leaderboard(message):
@@ -606,7 +662,8 @@ def send_quiz_leaderboard(message):
     q = json.load(file)
     board = q["quiz"]
     for k, v in board.items():
-      if len(k) > 2:
+      if len(k) > 5:
+        print(v)
         table[v[0]] = v[1]
   print(table)
 
